@@ -23,7 +23,29 @@ OWNER="dmaljkovic"
 STUB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/old-pages-stub" && pwd)"
 
 DRY_RUN=0
-[ "${1:-}" = "--dry-run" ] && DRY_RUN=1
+WITH_OLD_URL_STUB=0
+for arg in "$@"; do
+    case "$arg" in
+        --dry-run) DRY_RUN=1 ;;
+        --with-old-url-stub) WITH_OLD_URL_STUB=1 ;;
+        -h|--help)
+            cat <<'EOF'
+Usage: tools/publish.sh [--dry-run] [--with-old-url-stub]
+
+  --dry-run             print what would happen without changing anything
+  --with-old-url-stub   also create the redirect stub repository that keeps
+                        the old proxmox-lab URL working. It is opt-in because
+                        the stub is a second repository on the account, and
+                        the old URL is not worth one unless it is wanted.
+EOF
+            exit 0
+            ;;
+        *)
+            echo "unknown option: $arg" >&2
+            exit 1
+            ;;
+    esac
+done
 
 run() {
     if [ "$DRY_RUN" -eq 1 ]; then
@@ -148,7 +170,9 @@ name_is_free() {
     [ -z "$canonical" ] || [ "$canonical" != "$OWNER/$OLD_NAME" ]
 }
 
-if ! name_is_free; then
+if [ "$WITH_OLD_URL_STUB" -eq 0 ]; then
+    echo "  skipped, pass --with-old-url-stub to publish it"
+elif ! name_is_free; then
     echo "  $OWNER/$OLD_NAME already exists, skipping stub creation"
 else
     # GitHub releases the old name asynchronously after a rename, so give it
@@ -167,12 +191,12 @@ else
     if [ "$created" -eq 0 ]; then
         echo "  could not create $OWNER/$OLD_NAME"
         echo "  create it manually at https://github.com/new, then run:"
-        echo "    tools/publish.sh"
+        echo "    tools/publish.sh --with-old-url-stub"
         exit 1
     fi
 fi
 
-if [ "$DRY_RUN" -eq 0 ]; then
+if [ "$WITH_OLD_URL_STUB" -eq 1 ] && [ "$DRY_RUN" -eq 0 ]; then
     TMP="$(mktemp -d)"
     cp "$STUB_DIR/index.html" "$STUB_DIR/404.html" "$TMP"/
     touch "$TMP/.nojekyll"
@@ -195,10 +219,16 @@ fi
 # --------------------------------------------------------------------------
 say "Verify"
 
+if [ "$WITH_OLD_URL_STUB" -eq 1 ]; then
+    OLD_URL_LINE="  Old URL       https://$OWNER.github.io/$OLD_NAME/   (redirect stub)"
+else
+    OLD_URL_LINE="  Old URL       not published, run with --with-old-url-stub to restore it"
+fi
+
 cat <<EOF
 
   New site      https://$OWNER.github.io/$NEW_NAME/
-  Old URL       https://$OWNER.github.io/$OLD_NAME/   (redirect stub)
+$OLD_URL_LINE
   Repository    https://github.com/$OWNER/$NEW_NAME
 
   The first deployment takes a minute or two. Watch it with:
