@@ -53,8 +53,12 @@ EOF
 fi
 echo "  gh authenticated as $(gh api user --jq .login)"
 
-if ! ssh -o BatchMode=yes -T git@github.com >/dev/null 2>&1; then
+# GitHub's SSH endpoint always exits non-zero, even on a successful
+# authentication, so the greeting in the output is what has to be checked.
+SSH_GREETING="$(ssh -o BatchMode=yes -T git@github.com 2>&1 || true)"
+if ! printf '%s' "$SSH_GREETING" | grep -q "successfully authenticated"; then
     echo "  SSH authentication to github.com failed"
+    printf '%s\n' "$SSH_GREETING" | head -3
     exit 1
 fi
 echo "  SSH authentication to github.com works"
@@ -99,11 +103,15 @@ fi
 # --------------------------------------------------------------------------
 say "Merge rewrite into master and publish"
 
-if [ "$(git rev-parse --abbrev-ref HEAD)" != "master" ]; then
-    git checkout master
+if [ "$DRY_RUN" -eq 1 ]; then
+    echo "  would merge rewrite into master and push to origin"
+else
+    if [ "$(git rev-parse --abbrev-ref HEAD)" != "master" ]; then
+        git checkout master
+    fi
+    git pull --ff-only origin master || git reset --hard origin/master
+    git merge --no-ff rewrite -m "Merge the rewritten documentation" || true
 fi
-git pull --ff-only origin master || git reset --hard origin/master
-git merge --no-ff rewrite -m "Merge the rewritten documentation" || true
 
 echo "  validating before push"
 python3 scripts/sanitize_check.py --scan-all
@@ -122,9 +130,25 @@ say "Publish the stub for the old URL"
 if gh repo view "$OWNER/$OLD_NAME" >/dev/null 2>&1; then
     echo "  $OWNER/$OLD_NAME already exists, skipping stub creation"
 else
-    run gh repo create "$OWNER/$OLD_NAME" --public \
-        --description "Redirect to $NEW_NAME" \
-        --disable-issues --disable-wiki
+    # GitHub releases the old name asynchronously after a rename, so give it
+    # a moment before trying to claim it again.
+    created=0
+    for attempt in 1 2 3 4 5 6 7 8 9 10; do
+        if gh repo create "$OWNER/$OLD_NAME" --public \
+            --description "Redirect to $NEW_NAME" \
+            --disable-issues --disable-wiki 2>/dev/null; then
+            created=1
+            break
+        fi
+        echo "  the name is not free yet, retrying in 5s (attempt $attempt)"
+        sleep 5
+    done
+    if [ "$created" -eq 0 ]; then
+        echo "  could not create $OWNER/$OLD_NAME"
+        echo "  create it manually at https://github.com/new, then run:"
+        echo "    tools/publish.sh"
+        exit 1
+    fi
 fi
 
 if [ "$DRY_RUN" -eq 0 ]; then
