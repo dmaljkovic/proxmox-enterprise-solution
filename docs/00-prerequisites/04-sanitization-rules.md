@@ -59,16 +59,23 @@ These rules have **no escape hatch**. A match is always a blocking error.
 |---|---|
 | `legacy-public-ip` | The retired server's public address |
 | `legacy-gateway` | The retired server's gateway address |
-| `legacy-subnet` | The private subnet of the retired deployment |
 | `unrelated-domain` | Domains owned by other projects |
 | `unrelated-hardware` | Hardware identifiers belonging to other projects |
 
 !!! note "The blocked values are not written down here on purpose"
     This document is published. Spelling out the retired addresses would defeat
     the purpose of blocking them, and would publish a description of the
-    previous topology to anyone reading the repository. The exact patterns live
-    in `scripts/sanitize_check.py`, in the `DEPLOYMENT_RULES` table. Run
-    `python scripts/sanitize_check.py --list-rules` to print them locally.
+    previous topology to anyone reading the repository.
+
+    The values are therefore matched by **SHA-256 digest** rather than by
+    literal comparison. The digests live in `scripts/sanitize_check.py`, in the
+    `DENY_DIGESTS` table. A digest cannot be reversed, so the values cannot be
+    recovered from the repository, but the gate still matches the exact value.
+    Run `python scripts/sanitize_check.py --list-rules` to print the table
+    locally.
+
+    The retired private subnet needs no digest at all: the generic IPv4 rule
+    below rejects every address outside `10.0.0.0/24`, which covers it.
 
 ### Value rules
 
@@ -81,12 +88,15 @@ These rules have **no escape hatch**. A match is always a blocking error.
 
 | Range | Purpose |
 |---|---|
-| `10.0.0.0/24` | Placeholder lab network |
+| `10.0.0.0/24` | Placeholder lab network — the only private range used here |
 | `127.0.0.0/8` | Loopback |
 | `192.0.2.0/24`, `198.51.100.0/24`, `203.0.113.0/24` | RFC 5737 documentation ranges |
-| `192.168.0.0/16`, `172.16.0.0/12` | Generic RFC 1918 examples (excluding the retired subnet) |
 | `1.1.1.1`, `9.9.9.9`, `8.8.8.8` | Public resolvers |
 | `0.0.0.0`, `255.255.255.255`, `255.x.x.x`, `224.x.x.x` | Special-use addresses |
+
+The other two RFC 1918 ranges are **deliberately not allowed**. Only
+`10.0.0.0/24` is used for private addressing, so a retired subnet cannot
+return by accident. Adding another range is a deliberate, documented change.
 
 When a real-looking address is genuinely needed to explain a concept, keep it
 inside the ranges above. If that is impossible, add an inline
@@ -113,7 +123,8 @@ Before opening a pull request:
 2. `mkdocs build --strict` — must exit `0` with no warnings.
 3. Re-read any page that was copied from another project; check the network
    values, the domain names and the hardware specs.
-4. Confirm no page still contains `192.168.192.`, a `192.168.192.x` address, or
-   the retired public address.
+4. Confirm every address on every page is inside the allow list above. The
+   generic IPv4 rule enforces this, but read the rendered page as well — a
+   value can reach the site through a diagram, a code block or a table cell.
 5. Confirm the rendered site shows placeholders, not real values — the
    deployment directory `site/` is served verbatim by GitHub Pages.

@@ -28,6 +28,7 @@ rules: those must never be committed, even as a placeholder.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import re
 import subprocess
 import sys
@@ -68,37 +69,34 @@ CREDENTIAL_RULES: list[tuple[str, str, re.Pattern[str]]] = [
 ]
 
 # --------------------------------------------------------------------------
-# Deployment-specific rules: values that belonged to the previous server or
-# to an unrelated project and must never reappear in this repository.
+# Deployment-specific values.
+#
+# These are stored as SHA-256 digests rather than as literals. The repository
+# is public, so writing the blocked values down here would publish them and
+# defeat the purpose of blocking them. A digest cannot be reversed, but it
+# still matches the exact value, which is what matters here.
+#
+# Matching is case-insensitive: candidates are lowercased before hashing.
 # --------------------------------------------------------------------------
 
-DEPLOYMENT_RULES: list[tuple[str, str, re.Pattern[str]]] = [
-    (
-        "legacy-public-ip",
-        "Public IP of the retired Hetzner deployment",
-        re.compile(r"\b135\.181\.215\.46\b"),
-    ),
-    (
-        "legacy-gateway",
-        "Gateway address of the retired Hetzner deployment",
-        re.compile(r"\b135\.181\.215\.1\b"),
-    ),
-    (
-        "legacy-subnet",
-        "Private subnet of the retired deployment",
-        re.compile(r"\b192\.168\.192\.\d{1,3}\b"),
-    ),
-    (
-        "unrelated-domain",
-        "Domain belonging to an unrelated project",
-        re.compile(r"\bunseen-uni\.xyz\b", re.IGNORECASE),
-    ),
-    (
-        "unrelated-hardware",
-        "Hardware identifiers from an unrelated project",
-        re.compile(r"\bLenovo\s*Y520\b|\bi7-7700HQ\b", re.IGNORECASE),
-    ),
-]
+DENY_DIGESTS: dict[str, str] = {
+    # Public address of the retired deployment
+    "95657b2532c46d15f960b9a3e0cebb4270c1fe6709a2c6674f00661a2f29c8e9": "legacy-public-ip",
+    # Gateway address of the retired deployment
+    "b23d2a3bc149fa3d3ec3c2f7536df513582d112fe170f1e163a3eecdcaa5ca42": "legacy-gateway",
+    # Domain owned by an unrelated project
+    "ea1cd092a6192308fa32ff186687a65102ee97bfa23e03c9c5f01b2c461ddfb4": "unrelated-domain",
+    # Hardware identifiers belonging to an unrelated project
+    "e04937fd7eefbf0e0989ff6897af65a754f36b13e104e73c2d4c53dbfb1df974": "unrelated-hardware",
+    "bacebd7c0ea242412344aa3035c25d7b669f976709f175076c674abbe86938d1": "unrelated-hardware",
+}
+
+DENY_RULE_DESCRIPTIONS = {
+    "legacy-public-ip": "Public address of the retired deployment",
+    "legacy-gateway": "Gateway address of the retired deployment",
+    "unrelated-domain": "Domain owned by an unrelated project",
+    "unrelated-hardware": "Hardware identifier belonging to an unrelated project",
+}
 
 # --------------------------------------------------------------------------
 # Password-style assignments. Values that are clearly placeholders are fine.
@@ -153,9 +151,6 @@ ALLOWED_IPV4 = [
     (re.compile(r"^192\.0\.2\.\d{1,3}$"), "RFC 5737 TEST-NET-1"),
     (re.compile(r"^198\.51\.100\.\d{1,3}$"), "RFC 5737 TEST-NET-2"),
     (re.compile(r"^203\.0\.113\.\d{1,3}$"), "RFC 5737 TEST-NET-3"),
-    # RFC 1918 space used only for generic documentation of NAT behaviour
-    (re.compile(r"^192\.168\.\d{1,3}\.\d{1,3}$"), "RFC 1918 generic example"),
-    (re.compile(r"^172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$"), "RFC 1918 generic example"),
     # Well-known public resolvers (not sensitive)
     (re.compile(r"^1\.1\.1\.1$"), "public resolver"),
     (re.compile(r"^9\.9\.9\.9$"), "public resolver"),
@@ -167,9 +162,9 @@ ALLOWED_IPV4 = [
     (re.compile(r"^224\.\d{1,3}\.\d{1,3}\.\d{1,3}$"), "multicast"),
 ]
 
-# The retired deployment used this exact subnet, so it must be rejected even
-# though it falls inside the generic RFC 1918 example above.
-LEGACY_SUBNET_PREFIX = "192.168.192."
+# Only 10.0.0.0/24 is used for private addressing in these documents. Every
+# other RFC 1918 range is rejected, so a retired subnet cannot return by
+# accident. Adding a range here requires a deliberate, documented change.
 
 SKIP_DIRS = {".git", "site", ".venv", "venv", "__pycache__", ".cache", "node_modules"}
 BINARY_SNIFF_BYTES = 8192
@@ -177,8 +172,6 @@ BINARY_SNIFF_BYTES = 8192
 
 def is_allowed_ip(ip: str) -> tuple[bool, str]:
     """Return (allowed, reason)."""
-    if ip.startswith(LEGACY_SUBNET_PREFIX):
-        return False, "retired deployment subnet"
     for pattern, reason in ALLOWED_IPV4:
         if pattern.match(ip):
             return True, reason
@@ -188,6 +181,42 @@ def is_allowed_ip(ip: str) -> tuple[bool, str]:
 def is_placeholder_password(value: str) -> bool:
     stripped = value.strip().strip("\"'`")
     return stripped.lower() in PASSWORD_PLACEHOLDERS
+
+
+def digest_candidates(line: str) -> list[str]:
+    """Words and adjacent word pairs from a line, normalised for hashing."""
+    tokens = [t.strip("\"'`.,;:()[]{}<>").lower() for t in line.split()]
+    candidates = [t for t in tokens if t]
+    candidates += [
+        f"{tokens[i]} {tokens[i + 1]}"
+        for i in range(len(tokens) - 1)
+        if tokens[i] and tokens[i + 1]
+    ]
+
+    # Addresses are often written with a prefix length or a port, and a
+    # trailing dot. Strip those so "addr/26" still matches "addr".
+    extended: list[str] = []
+    for candidate in candidates:
+        for part in (candidate.split("/")[0], candidate.split(":")[0]):
+            part = part.strip(".")
+            if part and part not in candidates:
+                extended.append(part)
+    candidates += extended
+
+    return candidates
+
+
+def match_digest(line: str) -> list[tuple[str, str]]:
+    """Return (rule_name, matched_tokens) for any denied digest found in the line."""
+    hits: dict[str, list[str]] = {}
+    for candidate in digest_candidates(line):
+        digest = hashlib.sha256(candidate.encode("utf-8")).hexdigest()
+        rule = DENY_DIGESTS.get(digest)
+        if rule:
+            tokens = hits.setdefault(rule, [])
+            if candidate not in tokens:
+                tokens.append(candidate)
+    return [(rule, ", ".join(tokens)) for rule, tokens in hits.items()]
 
 
 def read_text(path: Path) -> str | None:
@@ -216,10 +245,14 @@ def scan_text(path: Path, text: str) -> list[tuple[int, str, str]]:
             if match:
                 violations.append((lineno, name, f"{description}: {match.group(0)[:40]}"))
 
-        for name, description, pattern in DEPLOYMENT_RULES:
-            match = pattern.search(line)
-            if match:
-                violations.append((lineno, name, f"{description}: {match.group(0)[:40]}"))
+        for rule, token in match_digest(line):
+            violations.append(
+                (
+                    lineno,
+                    rule,
+                    f"{DENY_RULE_DESCRIPTIONS.get(rule, rule)}: {token[:40]}",
+                )
+            )
 
         for match in PASSWORD_ASSIGNMENT.finditer(line):
             if not is_placeholder_password(match.group(1)):
@@ -274,16 +307,21 @@ def list_rules() -> None:
     print("Credential rules (no escape hatch):")
     for name, description, _ in CREDENTIAL_RULES:
         print(f"  {name:22} {description}")
-    print("Deployment rules (no escape hatch):")
-    for name, description, _ in DEPLOYMENT_RULES:
-        print(f"  {name:22} {description}")
     print("Value rules:")
     print(f"  {'literal-password':22} password/secret with a literal (non-placeholder) value")
     print(f"  {'unexpected-ipv4':22} any IPv4 literal outside the placeholder ranges")
+    print("Deployment rules (matched by SHA-256 digest, values not stored):")
+    for rule, description in DENY_RULE_DESCRIPTIONS.items():
+        count = sum(1 for value in DENY_DIGESTS.values() if value == rule)
+        print(f"  {rule:22} {description} ({count} value(s))")
     print()
     print("Allowed IPv4 ranges:")
     for pattern, reason in ALLOWED_IPV4:
         print(f"  {pattern.pattern:40} {reason}")
+    print()
+    print("Note: the two RFC 1918 ranges other than 10.0.0.0/24 are")
+    print("      deliberately not allowed. Only 10.0.0.0/24 is used for")
+    print("      private addressing in these documents.")
 
 
 def main() -> int:
