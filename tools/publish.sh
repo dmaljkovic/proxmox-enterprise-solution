@@ -101,16 +101,28 @@ else
 fi
 
 # --------------------------------------------------------------------------
-say "Merge rewrite into master and publish"
+say "Publish master"
 
 if [ "$DRY_RUN" -eq 1 ]; then
-    echo "  would merge rewrite into master and push to origin"
+    echo "  would push master to origin"
 else
     if [ "$(git rev-parse --abbrev-ref HEAD)" != "master" ]; then
         git checkout master
     fi
     git pull --ff-only origin master || git reset --hard origin/master
-    git merge --no-ff rewrite -m "Merge the rewritten documentation" || true
+
+    # "rewrite" was the working branch while the old site was still on
+    # master. It is still merged in when it has something the master branch
+    # does not, so work committed on either branch ends up published.
+    if git rev-parse --verify --quiet rewrite >/dev/null; then
+        if ! git merge-base --is-ancestor rewrite master; then
+            git merge --no-ff rewrite \
+                -m "Merge the rewrite branch into master" || {
+                echo "  the rewrite branch could not be merged, resolve it by hand"
+                exit 1
+            }
+        fi
+    fi
 fi
 
 echo "  validating before push"
