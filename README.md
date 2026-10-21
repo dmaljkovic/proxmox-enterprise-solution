@@ -1,63 +1,70 @@
-# Proxmox Lab Infrastructure Training
+# Proxmox Enterprise Solution
 
-A comprehensive 15-day training project demonstrating enterprise infrastructure setup from bare metal to production-ready services.
+A complete, reproducible build of a nine-VM enterprise estate on a single
+Hetzner EX44 dedicated server, documented end to end.
 
-## About This Project
+**Documentation:** <https://dmaljkovic.github.io/proxmox-enterprise-solution/>
 
-This is a comprehensive training project demonstrating enterprise infrastructure setup using:
+## Overview
 
-- **Virtualization:** Proxmox VE 8.2 with ZFS storage
-- **Operating System:** Ubuntu Server 24.04 LTS
-- **Collaboration:** Rocket.Chat 6.x, Nextcloud 28.x
-- **Identity Management:** Keycloak 24.0.0, OpenLDAP 2.5.x
-- **Security:** CIS benchmarks, Fail2Ban, SSL/TLS
-- **Monitoring:** Prometheus 2.51.0, Grafana 10.x
+| | |
+|---|---|
+| Host | Hetzner EX44 — Intel Core i5-13500, 64 GB DDR4, 2 × 512 GB NVMe mirrored |
+| Hypervisor | Proxmox VE 9.2, ZFS on the mirrored pair |
+| Guests | Nine VMs, Ubuntu 26.04 LTS (Rocket.Chat on 24.04 LTS) |
+| Published | Rocket.Chat, Nextcloud, Keycloak, Grafana and the docs, behind one Nginx proxy with TLS |
+| Identity | OpenLDAP directory with Keycloak 26.8.1 as the OIDC provider |
+| Observability | Prometheus and Grafana with node_exporter across the estate |
 
-**Note:** This documentation uses `example.com` as a placeholder domain per RFC 2606 standards. In a production environment, this would be replaced with your actual domain.
+## Documentation structure
 
-**Training Timeline:** 15 days from bare metal to production-ready infrastructure
+```
+docs/
+├── index.md                       Entry point and design decisions
+├── 00-prerequisites/              Hardware, account, DNS, inventory
+├── 01-preparation/                Rescue, ZFS, install, network, recovery
+├── 02-vm-creation/                One page per guest
+├── 03-software/                   One page per service
+├── 04-security/                   Firewalls, Fail2Ban, CIS, backups, audit
+├── 05-monitoring/                 Prometheus, Grafana, Hetzner checks
+├── 06-maintenance/                Updates, restore, doc maintenance
+└── 07-diagrams/                   Topology, auth flow, backup flow
+```
 
-## Skills Demonstrated
+The [lab inventory](docs/00-prerequisites/03-lab-inventory.md) is the single
+source of truth for every address, port and version. Other pages link to it
+rather than repeating values.
 
-- Infrastructure as Code principles
-- Enterprise authentication and SSO (Single Sign-On)
-- Security hardening and compliance
-- Technical documentation and knowledge management
-- Virtualization and container orchestration
-- Monitoring and observability
-- Backup and disaster recovery
+## Local development
 
-## Architecture Overview
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 
-Infrastructure consists of:
-- 1 Proxmox host with ZFS storage
-- 6 Virtual Machines running Ubuntu 24.04 LTS
-- Centralized authentication via Keycloak + OpenLDAP
-- Reverse proxy with SSL termination
-- Comprehensive monitoring stack
+python scripts/sanitize_check.py --scan-all   # must exit 0
+mkdocs build --strict                          # must exit 0
+mkdocs serve                                   # preview on http://127.0.0.1:8000
+```
 
-## Documentation Structure
+Enable the pre-commit sanitization gate once per clone:
 
-- **01-preparation/**: Physical server setup (Days 1)
-- **02-vm-creation/**: Virtual machine creation (Day 2)
-- **03-software/**: Service installation (Days 3-8)
-- **04-security/**: Hardening and security (Days 9-10)
-- **05-monitoring/**: Observability setup (Day 11)
-- **06-maintenance/**: Operations and maintenance
-- **07-diagrams/**: Architecture diagrams
+```bash
+git config core.hooksPath .githooks
+```
 
-## Live Documentation
+## Deployment
 
-View the full documentation at: https://dmaljkovic.github.io/proxmox-lab/
+The `Deploy to GitHub Pages` workflow builds with `mkdocs build --strict`,
+runs the sanitization gate, and publishes through `actions/deploy-pages`. The
+site requires the repository's Pages source to be set to **GitHub Actions**.
 
-## Technologies Used
+## Sanitization
 
-- Proxmox VE 8.2, Ubuntu Server 24.04 LTS
-- Docker 24.x, Rocket.Chat 6.x, Nextcloud 28.x
-- Keycloak 24.0.0, OpenLDAP 2.5.x
-- Nginx 1.24, Prometheus 2.51.0, Grafana 10.x
-- MkDocs with Material theme
+This repository is public. The [sanitization rules](docs/00-prerequisites/04-sanitization-rules.md)
+define the placeholder convention and the values that must never appear.
+`scripts/sanitize_check.py` enforces them in the pre-commit hook and in CI.
 
-## Author
+## License
 
-**dmaljkovic** - Infrastructure Training Project
+MIT — see [LICENSE](LICENSE).

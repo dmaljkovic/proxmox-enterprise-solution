@@ -1,1 +1,30 @@
+site/
+.cache/
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+.mypy_cache/
+.ruff_cache/
+
 summary.txt
+
+# Credentials and private key material
+github_token.txt
+*.pem
+*.key
+.env
+.env.*
+id_rsa
+id_ed25519
+
+# Local working documents with potentially sensitive content
+*.docx
+*.pdf
+
+.DS_Store
+Thumbs.db
+*.swp
+*~
