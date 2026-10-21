@@ -1,26 +1,10 @@
-# Hetzner Monitoring Integration
+# Hetzner monitoring
 
-Brief description: Configure Hetzner's built-in monitoring for host-level metrics.
+!!! info "Under construction"
+    This page is rewritten in **Phase 6**. The previous version contained
+    outdated versions, placeholder drift and broken procedures and was removed
+    rather than patched.
 
-## Prerequisites
+Hetzner Cloud and Robot level checks: disk health, memory, and the outgoing traffic limits.
 
-- [ ] Hetzner server active
-- [ ] Access to Hetzner Robot portal
-
-## Enable Hetzner Monitoring
-
-1. Log into https://robot.hetzner.com
-2. Select your server
-3. Click **Monitoring** tab
-4. Enable monitoring
-5. Configure alert thresholds:
-   - CPU: 90% for 5 minutes
-   - RAM: 90% for 5 minutes
-   - Disk: 90% for 5 minutes
-
-## Verification
-
-- [ ] Hetzner monitoring enabled
-- [ ] Alert thresholds configured
-- [ ] Email notifications set up
-
+    See the repository issue tracker for the remaining work.

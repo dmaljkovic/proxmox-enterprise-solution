@@ -1,61 +1,10 @@
-# System Updates
+# Updates
 
-Brief description: Procedures for keeping all systems updated and secure.
+!!! info "Under construction"
+    This page is rewritten in **Phase 6**. The previous version contained
+    outdated versions, placeholder drift and broken procedures and was removed
+    rather than patched.
 
-## Proxmox Host Updates
+Update paths for the host, the guests, and the containers, in a safe order.
 
-```bash
-# Update package lists
-apt update
-
-# Check for upgrades
-apt list --upgradable
-
-# Perform upgrade
-apt full-upgrade -y
-
-# Check if reboot required
-if [ -f /var/run/reboot-required ]; then
-    echo "Reboot required"
-fi
-```
-
-## VM Updates
-
-Script to update all VMs:
-
-```bash
-for ip in 192.168.192.101 192.168.192.102 192.168.192.20 192.168.192.104 192.168.192.105 192.168.192.106; do
-    echo "Updating $ip..."
-    ssh admin@$ip "sudo apt update && sudo apt upgrade -y"
-done
-```
-
-## Snap Updates (Rocket.Chat & Nextcloud)
-
-### Rocket.Chat
-
-```bash
-ssh admin@192.168.192.101
-sudo snap refresh rocketchat
-```
-
-### Nextcloud
-
-```bash
-ssh admin@192.168.192.102
-sudo snap refresh nextcloud
-```
-
-## Verification
-
-- [ ] Update procedures documented
-- [ ] Scripts created
-- [ ] Tested on one VM
-
-## Schedule
-
-- **Security updates**: Weekly
-- **Regular updates**: Monthly
-- **Major upgrades**: Quarterly
-
+    See the repository issue tracker for the remaining work.

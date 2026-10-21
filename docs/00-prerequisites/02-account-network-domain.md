@@ -1,0 +1,142 @@
+# Account, network and domain
+
+## Hetzner account
+
+Provisioning a dedicated server is a Robot-level operation, separate from a
+Hetzner Cloud project. Two accounts are involved and they are not
+interchangeable.
+
+| Account | Used for |
+|---|---|
+| **Robot** (`robot.your-account.example`) | Dedicated servers, their reverse DNS, the server firewall, the reset console |
+| **Cloud** (`console.hetzner.cloud`) | Project API tokens, load balancers, and other cloud products — not needed for this project |
+
+Steps:
+
+1. Create the Robot account and complete the e-mail confirmation.
+2. Order the EX44 under **Dedicated Servers**, not Cloud.
+3. After the order completes, the server appears in the Robot server list with
+   its public address, gateway and netmask.
+4. Set the **reverse DNS** (`rdns`) for the server to
+   `pve-01.example.com`. Every hostname in the DNS zone then points at it.
+
+Record these three values in a local, uncommitted file — they are specific to
+the real deployment and must not appear in this repository:
+
+```text
+# /home/rince/Projects/proxmox-enterprise-solution/../server-info.local.txt
+PUBLIC_IP=203.0.113.10
+GATEWAY=203.0.113.1
+NETMASK=255.255.255.192
+PREFIX=26
+```
+
+Replace the placeholder values with the ones the Robot console shows. The
+`.gitignore` excludes `*.txt` files matching that pattern from being tracked
+only if they are named accordingly; verify with `git status` before committing
+anything.
+
+## Server firewall
+
+The Robot console exposes a packet filter that is applied **before** traffic
+reaches the host. It is the first line of defence and the cheapest place to
+restrict the management ports.
+
+| Rule | Protocol | Port | Source | Purpose |
+|---|---|---|---|---|
+| 1 | tcp | 22 | `ADMIN_IP/32` | SSH from the admin network only |
+| 2 | tcp | 8006 | `ADMIN_IP/32` | Proxmox web UI from the admin network only |
+| 3 | tcp | 80 | `0.0.0.0/0` | Public HTTP, redirected to 443 |
+| 4 | tcp | 443 | `0.0.0.0/0` | Public HTTPS |
+| 5 | tcp | 6800–6804 | `0.0.0.0/0` | SPICE proxy for console viewing |
+| 6 | udp | 6800–6804 | `0.0.0.0/0` | SPICE proxy for console viewing |
+
+Everything else is dropped by default.
+
+!!! tip "The admin source address is not the server's own address"
+    `ADMIN_IP` is the address of the machine you administer from — a home
+    broadband connection, a laptop, or a VPN endpoint. It changes when you move.
+    Reserve a small block of addresses rather than a single one, so a DHCP
+    change does not lock you out.
+
+!!! danger "Lock yourself out before you lock everyone else out"
+    Apply the SSH rule while an existing session is still open, then verify a
+    *second* session from the allowed address before closing the first. The
+    Robot reset console remains available as the recovery path.
+
+The Proxmox-side equivalent — protecting the host from inside — is
+[Host firewall](../04-security/01-host-firewall.md). The two layers are
+deliberate and independent: the Robot filter survives a misconfigured guest
+firewall, and the host firewall protects against traffic that arrives from
+the private network.
+
+## Domain and DNS
+
+Five public hostnames terminate TLS at the Nginx proxy. See the
+[domain map in the lab inventory](03-lab-inventory.md).
+
+| Record | Type | Value |
+|---|---|---|
+| `chat` | A | `203.0.113.10` |
+| `cloud` | A | `203.0.113.10` |
+| `auth` | A | `203.0.113.10` |
+| `docs` | A | `203.0.113.10` |
+| `grafana` | A | `203.0.113.10` |
+| `pve-01` | A | `203.0.113.10` |
+
+Replace `203.0.113.10` with the real address in your own DNS zone. The
+placeholder belongs in this repository; the real value belongs in the zone
+file at your DNS provider.
+
+!!! warning "All five names resolve to one address"
+    Nothing is distinguished by DNS. The Nginx proxy routes on the
+    `Host` header, so the certificates and the `server_name` directives are
+    what actually separate the services. That is why
+    [Nginx reverse proxy and TLS](../03-software/03-nginx-reverse-proxy.md)
+    must obtain a certificate covering **all five** names — a partial set
+    produces an `nginx -t` failure and a failed reload.
+
+### DNS validation for certificates
+
+The Nginx proxy obtains certificates with Certbot using the HTTP-01 challenge,
+which requires port 80 to reach the proxy from the internet. Two consequences:
+
+- Port 80 must be open in the Robot firewall **and** in the host firewall
+  before the first issuance attempt.
+- The `webroot` for the challenge must exist and be writable before Certbot
+  runs.
+
+Alternatively, the DNS-01 challenge avoids both requirements. It needs the
+provider's API credentials on the proxy, which adds a long-lived secret to a
+machine. HTTP-01 is the simpler default here because the challenge port is
+already public.
+
+## Credentials to prepare
+
+Collect these before the software phase. Each one is used by exactly one
+service, and each is generated once and stored in that service's own
+configuration.
+
+| Secret | Consumer | Generated by |
+|---|---|---|
+| PostgreSQL password | Keycloak | [PostgreSQL](../03-software/06-postgresql.md) |
+| Keycloak admin password | Keycloak | [Keycloak](../03-software/05-keycloak.md) |
+| OIDC client secret | Rocket.Chat, Nextcloud, Grafana | [OIDC integration](../03-software/07-oidc-integration.md) |
+| LDAP bind password | Keycloak | [OpenLDAP](../03-software/04-openldap.md) |
+| Grafana admin password | Grafana | [Grafana](../03-software/10-grafana.md) |
+| MongoDB root password | Rocket.Chat | [Rocket.Chat](../03-software/01-rocketchat.md) |
+
+Use a password manager to generate each one. Do not reuse a single value
+across services, and do not write any of them into this repository — the
+sanitization gate rejects literal password assignments, but it is a backstop,
+not a substitute for the password manager.
+
+## Checklist
+
+- [ ] Robot account created and confirmed
+- [ ] EX44 ordered; public address, gateway and prefix recorded locally
+- [ ] Reverse DNS set to `pve-01.example.com`
+- [ ] Robot firewall configured, with a second SSH session verified
+- [ ] Domain registered, `example.com` zone pointed at the server
+- [ ] All five public hostnames resolving
+- [ ] Password manager entries created for the six secrets above

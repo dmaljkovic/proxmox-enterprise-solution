@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+#
+# Pre-commit sanitization gate.
+#
+# Enabled via:  git config core.hooksPath .githooks
+#
+# Scans every staged file for credentials, private key material, retired
+# deployment addresses and any IPv4 literal outside the documented placeholder
+# ranges. Blocks the commit when a violation is found.
+#
+# Bypass for a legitimate reason:  git commit --no-verify
+# (and note the reason in the commit body - bypasses are visible in review.)
+
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "pre-commit: python3 not found, skipping sanitization check" >&2
+    exit 0
+fi
+
+staged_files=()
+while IFS= read -r -d '' file; do
+    # Skip deletions and anything git does not have as a regular file.
+    if git cat-file -e ":$file" 2>/dev/null; then
+        staged_files+=("$file")
+    fi
+done < <(git diff --cached --name-only --diff-filter=ACMR -z)
+
+if [ ${#staged_files[@]} -eq 0 ]; then
+    exit 0
+fi
+
+if ! python3 scripts/sanitize_check.py "${staged_files[@]}"; then
+    echo ""
+    echo "pre-commit: commit BLOCKED by the sanitization gate." >&2
+    echo "Fix the reported values, or use 'git commit --no-verify' with a reason." >&2
+    exit 1
+fi
+
+exit 0
