@@ -127,7 +127,16 @@ run git push origin master
 # --------------------------------------------------------------------------
 say "Publish the stub for the old URL"
 
-if gh repo view "$OWNER/$OLD_NAME" >/dev/null 2>&1; then
+# A renamed repository keeps answering under its old name through a GitHub
+# redirect, so "gh repo view" succeeding does not mean the name is taken.
+# The API reports the canonical full_name, which is what has to be compared.
+name_is_free() {
+    local canonical
+    canonical="$(gh api "repos/$OWNER/$OLD_NAME" --jq .full_name 2>/dev/null || true)"
+    [ -z "$canonical" ] || [ "$canonical" != "$OWNER/$OLD_NAME" ]
+}
+
+if ! name_is_free; then
     echo "  $OWNER/$OLD_NAME already exists, skipping stub creation"
 else
     # GitHub releases the old name asynchronously after a rename, so give it
@@ -153,7 +162,8 @@ fi
 
 if [ "$DRY_RUN" -eq 0 ]; then
     TMP="$(mktemp -d)"
-    cp -r "$STUB_DIR"/. "$TMP"/
+    cp "$STUB_DIR/index.html" "$STUB_DIR/404.html" "$TMP"/
+    touch "$TMP/.nojekyll"
     (
         cd "$TMP"
         git init --quiet --initial-branch=gh-pages
