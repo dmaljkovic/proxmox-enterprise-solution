@@ -64,7 +64,3 @@ site requires the repository's Pages source to be set to **GitHub Actions**.
 This repository is public. The [sanitization rules](docs/00-prerequisites/04-sanitization-rules.md)
 define the placeholder convention and the values that must never appear.
 `scripts/sanitize_check.py` enforces them in the pre-commit hook and in CI.
-
-## License
-
-MIT — see [LICENSE](LICENSE).

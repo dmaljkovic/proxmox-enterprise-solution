@@ -37,25 +37,3 @@ Hetzner EX44 dedicated server, documented end to end.
 | Monitoring | The Prometheus and Grafana stack, and Hetzner-level checks |
 | Maintenance | Updates, backup and restore, maintaining this site |
 | Diagrams | Topology, authentication flow, backup flow |
-
-## Local development
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-
-python scripts/sanitize_check.py --scan-all   # must exit 0
-mkdocs build --strict                          # must exit 0
-mkdocs serve                                   # preview on http://127.0.0.1:8000
-```
-
-Enable the pre-commit gate once per clone:
-
-```bash
-git config core.hooksPath .githooks
-```
-
-## License
-
-MIT — see [LICENSE](https://github.com/dmaljkovic/proxmox-enterprise-solution/blob/master/LICENSE).
