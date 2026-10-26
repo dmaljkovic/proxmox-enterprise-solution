@@ -1,5 +1,5 @@
 site_name: Proxmox Enterprise Solution
-site_description: Hetzner EX44 + Proxmox VE 9.2 reference architecture with a hardened VM estate
+site_description: Hetzner EX44 + Proxmox VE, from rescue mode to running services
 site_url: https://dmaljkovic.github.io/proxmox-enterprise-solution/
 repo_url: https://github.com/dmaljkovic/proxmox-enterprise-solution
 repo_name: dmaljkovic/proxmox-enterprise-solution
@@ -54,15 +54,30 @@ plugins:
   - search
   - redirects:
       redirect_maps:
-        01-preparation/02-proxmox-installation.md: 01-preparation/03-proxmox-installation.md
-        01-preparation/03-network-configuration.md: 01-preparation/04-network-configuration.md
-        02-vm-creation/06-ldap-vm.md: 02-vm-creation/06-openldap-vm.md
-        03-software/04-ldap.md: 03-software/04-openldap.md
-        03-software/05-keycloak-oidc.md: 03-software/05-keycloak.md
-        03-software/06-keycloak-services-integration.md: 03-software/07-oidc-integration.md
-        04-security/01-firewall.md: 04-security/02-vm-firewall.md
-        04-security/03-backup-snapshots.md: 04-security/05-backup-strategy.md
-        06-maintenance/02-rollback.md: 06-maintenance/02-backup-restore.md
+        01-preparation/02-zfs-pool.md: 01-preparation/02-proxmox-installation.md
+        01-preparation/03-proxmox-installation.md: 01-preparation/02-proxmox-installation.md
+        01-preparation/04-network-configuration.md: 01-preparation/03-network-configuration.md
+        01-preparation/05-recover-from-rescue.md: 01-preparation/01-rescue-mode.md
+        02-vm-creation/06-openldap-vm.md: 02-vm-creation/06-ldap-vm.md
+        02-vm-creation/08-postgres-vm.md: 02-vm-creation/01-overview.md
+        02-vm-creation/09-prometheus-vm.md: 02-vm-creation/01-overview.md
+        02-vm-creation/10-grafana-vm.md: 02-vm-creation/01-overview.md
+        03-software/04-openldap.md: 03-software/04-ldap.md
+        03-software/05-keycloak.md: 03-software/05-keycloak-oidc.md
+        03-software/07-oidc-integration.md: 03-software/05-keycloak-oidc.md
+        03-software/08-mkdocs.md: 02-vm-creation/05-mkdocs-vm.md
+        03-software/09-prometheus.md: 05-monitoring/01-prometheus-grafana.md
+        03-software/10-grafana.md: 05-monitoring/01-prometheus-grafana.md
+        04-security/01-host-firewall.md: 04-security/01-firewall.md
+        04-security/02-vm-firewall.md: 04-security/01-firewall.md
+        04-security/03-fail2ban.md: 04-security/02-fail2ban.md
+        04-security/04-cis-hardening.md: 04-security/04-cis-hardening.md
+        04-security/05-backup-strategy.md: 04-security/03-backup-snapshots.md
+        04-security/06-security-audit.md: 04-security/04-cis-hardening.md
+        06-maintenance/02-backup-restore.md: 04-security/03-backup-snapshots.md
+        07-diagrams/01-topology.md: 07-diagrams/topology.md
+        07-diagrams/02-login-flow.md: 07-diagrams/flowchart.md
+        07-diagrams/03-backup-flow.md: 04-security/03-backup-snapshots.md
   - minify:
       minify_html: true
 
@@ -78,54 +93,36 @@ validation:
 
 nav:
   - Home: index.md
-  - Prerequisites:
-      - 00-prerequisites/01-hardware-and-budget.md
-      - 00-prerequisites/02-account-network-domain.md
-      - 00-prerequisites/03-lab-inventory.md
-      - 00-prerequisites/04-sanitization-rules.md
   - Preparation:
       - 01-preparation/01-rescue-mode.md
-      - 01-preparation/02-zfs-pool.md
-      - 01-preparation/03-proxmox-installation.md
-      - 01-preparation/04-network-configuration.md
-      - 01-preparation/05-recover-from-rescue.md
+      - 01-preparation/02-proxmox-installation.md
+      - 01-preparation/03-network-configuration.md
   - VM Creation:
       - 02-vm-creation/01-overview.md
       - 02-vm-creation/02-rocketchat-vm.md
       - 02-vm-creation/03-nextcloud-vm.md
       - 02-vm-creation/04-nginx-proxy-vm.md
       - 02-vm-creation/05-mkdocs-vm.md
-      - 02-vm-creation/06-openldap-vm.md
+      - 02-vm-creation/06-ldap-vm.md
       - 02-vm-creation/07-keycloak-vm.md
-      - 02-vm-creation/08-postgres-vm.md
-      - 02-vm-creation/09-prometheus-vm.md
-      - 02-vm-creation/10-grafana-vm.md
   - Software Installation:
       - 03-software/01-rocketchat.md
       - 03-software/02-nextcloud.md
       - 03-software/03-nginx-reverse-proxy.md
-      - 03-software/04-openldap.md
-      - 03-software/05-keycloak.md
-      - 03-software/06-postgresql.md
-      - 03-software/07-oidc-integration.md
-      - 03-software/08-mkdocs.md
-      - 03-software/09-prometheus.md
-      - 03-software/10-grafana.md
+      - 03-software/04-ldap.md
+      - 03-software/05-keycloak-oidc.md
   - Security:
-      - 04-security/01-host-firewall.md
-      - 04-security/02-vm-firewall.md
-      - 04-security/03-fail2ban.md
+      - 04-security/01-firewall.md
+      - 04-security/02-fail2ban.md
+      - 04-security/03-backup-snapshots.md
       - 04-security/04-cis-hardening.md
-      - 04-security/05-backup-strategy.md
-      - 04-security/06-security-audit.md
   - Monitoring:
       - 05-monitoring/01-prometheus-grafana.md
       - 05-monitoring/02-hetzner-monitoring.md
   - Maintenance:
       - 06-maintenance/01-updates.md
-      - 06-maintenance/02-backup-restore.md
+      - 06-maintenance/02-rollback.md
       - 06-maintenance/03-doc-update.md
   - Diagrams:
-      - 07-diagrams/01-topology.md
-      - 07-diagrams/02-login-flow.md
-      - 07-diagrams/03-backup-flow.md
+      - 07-diagrams/topology.md
+      - 07-diagrams/flowchart.md

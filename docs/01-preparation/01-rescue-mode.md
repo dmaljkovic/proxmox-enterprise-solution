@@ -1,218 +1,110 @@
-# Rescue mode
+# Rescue Mode and Initial Access
 
-Three different rescue environments exist in this stack. They are not
-interchangeable, and confusing them is the single most common cause of a
-server that cannot be reached.
+Brief description: Access your Hetzner server in rescue mode to prepare for Proxmox installation.
 
-| Environment | Where it runs | What it is for |
-|---|---|---|
-| **Hetzner Rescue System** | A Debian live environment booted over the network, running entirely in RAM | Preparing the disks before the install; running the Proxmox installer under QEMU; reaching a host that does not boot |
-| **Proxmox: Rescue Boot** | The Proxmox ISO boot menu | Booting an *existing* installation using the ISO's kernel, when the bootloader is broken |
-| **Proxmox: Debug Mode** | The Proxmox ISO boot menu | A live Linux with all tools available, for repairing a degraded ZFS pool or the bootloader |
+## What You'll Learn
 
-!!! danger "The Hetzner Rescue System does not touch the disks"
-    It boots over PXE and runs from RAM. The activation is valid for **one
-    boot** and expires **60 minutes** after it is requested. Neither fact is
-    a problem, but both are surprising if you did not expect them.
+- How to activate rescue mode in Hetzner Robot
+- How to SSH into the rescue environment
+- How to identify NVMe storage devices
 
-## Choosing an environment
+## Prerequisites
 
-| Situation | Use |
-|---|---|
-| The server is new and its disks still carry Hetzner's software RAID | Hetzner Rescue System |
-| The Proxmox installer has to run | Hetzner Rescue System, with QEMU — see [Proxmox VE installation](03-proxmox-installation.md) |
-| The host booted but has no network, or the ZFS pool did not import | Hetzner Rescue System, or Proxmox Debug Mode |
-| The bootloader is broken but the data is intact | Proxmox Rescue Boot, or the Hetzner Rescue System |
-| A ZFS pool is degraded and needs a scrub or a resilver | Proxmox Debug Mode |
+- [ ] Hetzner EX44 server ordered and delivered
+- [ ] Access to Hetzner Robot portal (https://robot.hetzner.com)
+- [ ] SSH client installed on your local machine
+- [ ] Server IP address from Hetzner
 
-## Activating the Hetzner Rescue System
+## Estimated Time
 
-1. In Robot, open the server and go to the **Rescue** tab.
-2. Choose **Rescue System** and press **Activate rescue system**.
-3. Copy the temporary root password that Robot displays. It is valid for this
-   boot only.
-4. **Reboot the server.** The activation does not interrupt the running
-   system — it only schedules the next boot.
-5. Connect over SSH:
+30-45 minutes
 
-    ```console
-    $ ssh root@203.0.113.10
-    ```
+## Step-by-Step Instructions
 
-The login banner identifies the environment, so confirm you are where you
-think you are:
+### Step 1: Access Hetzner Robot Portal
 
-```console
-root@rescue ~ # cat /etc/issue
-Debian GNU/Linux 12 (bookworm) \n \l rescue
+1. Open your web browser
+2. Navigate to https://robot.hetzner.com
+3. Log in with your credentials
+4. Click on your server in the server list
+
+### Step 2: Activate Rescue Mode
+
+1. Click the **"Rescue"** tab in the server details
+2. Select **"Linux 64-bit"** from the operating system dropdown
+3. Click **"Activate rescue mode"** button
+4. A root password will be displayed - copy this to a secure location
+5. Click **"Send CTRL+ALT+DEL to reset"** or power cycle the server
+6. Wait 2-3 minutes for the server to boot into rescue mode
+
+### Step 3: SSH into Rescue Mode
+
+Open your terminal and connect:
+
+```bash
+ssh root@<your-server-ip>
 ```
 
-If the machine still boots the installed system instead, the rescue
-activation was not scheduled — return to Robot and repeat step 4.
+When prompted for password, enter the rescue password from Step 2.
 
-## Surveying the hardware
-
-Do this before changing anything. Every decision in the rest of this phase
-depends on what these commands print.
-
-```console
-# The block devices, their sizes and their connection type
-root@rescue ~ # lsblk -o NAME,SIZE,TYPE,MODEL,TRAN
-
-# Any Linux software RAID that Hetzner pre-configured
-root@rescue ~ # cat /proc/mdstat
-
-# Any ZFS pool left over from a previous installation
-root@rescue ~ # zpool status
-zpool: no pools available
-
-# The physical uplink and its MAC address
-root@rescue ~ # ip -br link
-lo               UNKNOWN        00:00:00:00:00:00 <LOOPBACK,UP,LOWER_UP>
-enp34s0          UP             00:00:00:00:00:00 <BROADCAST,MULTICAST,UP,LOWER_UP>
-
-# The firmware mode, which decides how the installer is booted
-root@rescue ~ # [ -d /sys/firmware/efi ] && echo UEFI || echo Legacy
-UEFI
+You should see output similar to:
+```
+Rescue System 6.0.1
+root@rescue ~ #
 ```
 
-!!! warning "Record the uplink name now"
-    `enp34s0` above is the name the *hardware* uses. The Proxmox installer
-    running under QEMU sees a different, virtualised name for the same
-    adapter, and writes that name into the configuration it leaves behind.
-    This is the cause of the failure described in
-    [Recovering from rescue mode](05-recover-from-rescue.md), and it is much
-    cheaper to record the name here than to repair it later.
+### Step 4: Verify NVMe Devices
 
-## Removing Hetzner's software RAID
+List available storage devices:
 
-!!! warning "This is the decision that cannot be undone casually"
-    A server ordered with two drives **and** an operating system is
-    pre-configured with a Linux software RAID 1 across both disks. The
-    installer then sees a single block device, not two.
-
-    ZFS cannot see through a software RAID. A pool built on top of one has
-    no redundancy as far as ZFS is concerned, no ability to scrub the
-    underlying device, and no self-healing — the redundancy exists one layer
-    down, where ZFS cannot reason about it.
-
-The archive server for this project wants a **real** ZFS mirror over both
-NVMe devices. That means the software RAID has to go.
-
-Check for it first:
-
-```console
-root@rescue ~ # cat /proc/mdstat
-Personalities : [raid1]
-md0 : active raid1 nvme0n1p1[0] nvme1n1p1[1]
-      1046528 blocks super 1.2 [2/2] [UU]
-...
+```bash
+lsblk
 ```
 
-If the output lists no arrays, there is nothing to remove — Hetzner has not
-configured any, and the drives are already raw. Continue.
-
-If arrays are present, stop them and wipe their metadata. This destroys all
-data on both drives, which is acceptable on a server that has never been
-used, and unacceptable on anything else:
-
-```console
-root@rescue ~ # mdadm --stop --scan
-root@rescue ~ # mdadm --zero-superblock --scan
-mdadm: zeroing superblock on /dev/nvme0n1 ...
-mdadm: zeroing superblock on /dev/nvme1n1 ...
+Expected output:
+```
+NAME        MAJ:MIN RM   SIZE RO TYPE MOUNTPOINT
+nvme0n1     259:0    0 476.9G  0 disk 
+nvme1n1     259:1    0 476.9G  0 disk
 ```
 
-Verify that the drives are now plain and empty:
+Verify device details:
 
-```console
-root@rescue ~ # cat /proc/mdstat
-Personalities : [raid1]
-unused devices: <none>
-
-root@rescue ~ # lsblk -o NAME,SIZE,TYPE,MODEL
-NAME        SIZE TYPE MODEL
-nvme0n1   476.9G disk Samsung SSD 980 PRO 512GB
-nvme1n1   476.9G disk Samsung SSD 980 PRO 512GB
+```bash
+fdisk -l | grep nvme
 ```
 
-Two independent 477 GB devices. That is the shape the rest of this phase
-assumes.
+Expected output:
+```
+Disk /dev/nvme0n1: 476.94 GiB, 512110190592 bytes, 1000215216 sectors
+Disk /dev/nvme1n1: 476.94 GiB, 512110190592 bytes, 1000215216 sectors
+```
 
-!!! note "You do not need this for the ISO method"
-    The ISO method in [Proxmox VE installation](03-proxmox-installation.md)
-    passes both drives to the installer directly. The RAID has to be gone in
-    either case, but the removal is what makes the mirror possible rather
-    than merely tidy.
+!!! warning "Device Verification"
+    Ensure you see exactly two NVMe devices (`/dev/nvme0n1` and `/dev/nvme1n1`) before proceeding. If you see different devices, stop and verify your server configuration.
 
-## Booting the Proxmox installer
+### Step 5: Update Rescue System
 
-Hetzner dedicated servers **cannot boot an arbitrary ISO** on their own. The
-boot order is fixed to the internal drives and the network. Three workarounds
-exist, and they are not equally good.
+Update package lists:
 
-| Method | Needs | ZFS root | Sees real hardware |
-|---|---|---|---|
-| **A — KVM Virtual Media** | The "Remote console / KVM" add-on, requested free of charge from Robot support; an SMB share holding the ISO | Yes | Yes |
-| **B — QEMU in the Rescue System** | Nothing beyond SSH | Yes | Only the disks and the NIC are passed through |
-| **C — Debian, then upgrade to Proxmox** | Nothing beyond SSH | No, the root stays on ext4/LVM | Yes |
+```bash
+apt update
+```
 
-**Method A** is the cleanest. The installer runs on the real machine, sees
-the real NIC under its real name, and sees the real NVMe devices. The costs
-are a support request and an ISO mount over SMB, which is slow but only has
-to happen once.
+Install essential tools:
 
-**Method B** is the fallback when the KVM add-on is not available. QEMU runs
-inside the Rescue System with the two NVMe drives passed through as raw
-block devices and the installer ISO attached as a CD-ROM. It is fully
-scriptable and needs no KVM. Its one real drawback is the network interface
-name, described below.
+```bash
+apt install -y wget curl vim
+```
 
-**Method C** is the simplest of all — `installimage` with Debian 13, then
-the official Debian-to-Proxmox upgrade. It produces a working Proxmox node
-with the real interface names and no virtualisation anywhere. What it does
-**not** produce is a ZFS root: the root filesystem stays on ext4/LVM, and
-the ZFS pool becomes a data pool for virtual machines rather than the pool
-the system boots from. Snapshots of the host filesystem are then unavailable.
+## Verification
 
-!!! tip "Method B and the interface name"
-    Under QEMU the guest sees a virtio network adapter, and the installer
-    writes its predictable name — typically `enp0s31f6` — into
-    `/etc/network/interfaces`. After the physical reboot that file names an
-    interface that does not exist on the hardware, and the host comes up with
-    no network at all.
+- [ ] Successfully accessed Hetzner Robot portal
+- [ ] Rescue mode activated successfully
+- [ ] SSH connection established to rescue environment
+- [ ] Both NVMe devices identified (`/dev/nvme0n1` and `/dev/nvme1n1`)
+- [ ] Rescue system updated
 
-    `predict-check` shows the mapping between the old and the new name:
+## Next Steps
 
-    ```console
-    root@rescue ~ # predict-check
-    eth0 -> enp0s31f6
-    ```
-
-    Two ways to avoid the problem:
-
-    - Install with the answer file and interface pinning, which
-      `proxmox-auto-install-assistant` supports. See
-      [Proxmox VE installation](03-proxmox-installation.md).
-    - Fix `/etc/network/interfaces` from the Rescue System before the first
-      physical reboot. See
-      [Recovering from rescue mode](05-recover-from-rescue.md).
-
-    Both are covered there in full.
-
-## Checklist
-
-- [ ] Rescue System activated in Robot, temporary password saved
-- [ ] Server rebooted into the Rescue System, SSH access confirmed
-- [ ] `lsblk` shows the expected block devices
-- [ ] `cat /proc/mdstat` checked; software RAID removed if present
-- [ ] `lsblk` confirms two independent NVMe devices
-- [ ] Physical uplink name and MAC recorded
-- [ ] Firmware mode recorded (`UEFI` or `Legacy`)
-
-## Related pages
-
-- [ZFS pool layout](02-zfs-pool.md)
-- [Proxmox VE installation](03-proxmox-installation.md)
-- [Network configuration](04-network-configuration.md)
-- [Recovering from rescue mode](05-recover-from-rescue.md)
+Proceed to [ZFS Setup](02-proxmox-installation.md) to create your storage pool.

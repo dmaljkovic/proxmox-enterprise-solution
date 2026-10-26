@@ -4,8 +4,7 @@
   <h1>404 &mdash; Page not found</h1>
 
   <p>
-    The documentation was reorganised during a full rewrite. This address no
-    longer exists.
+    There is no page at this address.
   </p>
 
   <div class="md-typeset">
@@ -16,7 +15,7 @@
 
     <p id="generic" hidden>
       The address you requested is not part of this documentation. It may have
-      been renamed during the rewrite, or it may never have existed.
+      been renamed, or it may never have existed.
     </p>
   </div>
 
@@ -24,37 +23,42 @@
 
   <ul>
     <li><a href="{{ 'index.html' | url }}">Documentation home</a></li>
-    <li><a href="{{ '00-prerequisites/03-lab-inventory/' | url }}">Lab inventory</a> &mdash; addresses, ports, versions</li>
-    <li><a href="{{ '01-preparation/03-proxmox-installation/' | url }}">Proxmox VE installation</a></li>
-    <li><a href="{{ '02-vm-creation/01-overview/' | url }}">VM estate overview</a></li>
+    <li><a href="{{ '01-preparation/01-rescue-mode/' | url }}">Rescue mode</a> &mdash; where Day 1 begins</li>
+    <li><a href="{{ '01-preparation/02-proxmox-installation/' | url }}">Proxmox VE installation</a></li>
+    <li><a href="{{ '02-vm-creation/01-overview/' | url }}">VM creation overview</a></li>
   </ul>
 {% endblock %}
 
 {% block scripts %}
   {{ super() }}
   <script>
-    // Legacy paths from the pre-rewrite site.
-    //
-    // The mkdocs-redirects plugin covers the pages that were renamed, but it
-    // only accepts Markdown sources. The previous diagram files were .mmd
-    // and were published as raw Mermaid source rather than rendered pages,
-    // so they are mapped here instead. The keys are matched against
-    // window.location.pathname with any trailing slash removed.
+    // Older addresses that have since been renamed. The mkdocs-redirects
+    // plugin handles most of these from Markdown sources; the diagram and
+    // nested paths are listed here instead. Keys are matched against
+    // window.location.pathname after trailing slashes are removed.
     var LEGACY = {
-      "/07-diagrams/topology.mmd": "/07-diagrams/01-topology/",
-      "/07-diagrams/flowchart.mmd": "/07-diagrams/02-login-flow/",
-      "/07-diagrams/topology": "/07-diagrams/01-topology/",
-      "/07-diagrams/flowchart": "/07-diagrams/02-login-flow/",
-      "/01-preparation/02-proxmox-installation": "/01-preparation/03-proxmox-installation/",
-      "/01-preparation/03-network-configuration": "/01-preparation/04-network-configuration/",
-      "/02-vm-creation/06-ldap-vm": "/02-vm-creation/06-openldap-vm/",
-      "/03-software/04-ldap": "/03-software/04-openldap/",
-      "/03-software/05-keycloak-oidc": "/03-software/05-keycloak/",
-      "/03-software/06-keycloak-services-integration": "/03-software/07-oidc-integration/",
-      "/04-security/01-firewall": "/04-security/02-vm-firewall/",
-      "/04-security/02-fail2ban": "/04-security/03-fail2ban/",
-      "/04-security/03-backup-snapshots": "/04-security/05-backup-strategy/",
-      "/06-maintenance/02-rollback": "/06-maintenance/02-backup-restore/"
+      "/01-preparation/02-zfs-pool": "/01-preparation/02-proxmox-installation/",
+      "/01-preparation/03-proxmox-installation": "/01-preparation/02-proxmox-installation/",
+      "/01-preparation/04-network-configuration": "/01-preparation/03-network-configuration/",
+      "/01-preparation/05-recover-from-rescue": "/01-preparation/01-rescue-mode/",
+      "/02-vm-creation/06-openldap-vm": "/02-vm-creation/06-ldap-vm/",
+      "/03-software/04-openldap": "/03-software/04-ldap/",
+      "/03-software/05-keycloak": "/03-software/05-keycloak-oidc/",
+      "/03-software/07-oidc-integration": "/03-software/05-keycloak-oidc/",
+      "/03-software/08-mkdocs": "/02-vm-creation/05-mkdocs-vm/",
+      "/03-software/09-prometheus": "/05-monitoring/01-prometheus-grafana/",
+      "/03-software/10-grafana": "/05-monitoring/01-prometheus-grafana/",
+      "/04-security/01-host-firewall": "/04-security/01-firewall/",
+      "/04-security/02-vm-firewall": "/04-security/01-firewall/",
+      "/04-security/03-fail2ban": "/04-security/02-fail2ban/",
+      "/04-security/05-backup-strategy": "/04-security/03-backup-snapshots/",
+      "/04-security/06-security-audit": "/04-security/04-cis-hardening/",
+      "/06-maintenance/02-backup-restore": "/04-security/03-backup-snapshots/",
+      "/07-diagrams/01-topology": "/07-diagrams/topology/",
+      "/07-diagrams/02-login-flow": "/07-diagrams/flowchart/",
+      "/07-diagrams/03-backup-flow": "/04-security/03-backup-snapshots/",
+      "/07-diagrams/topology.mmd": "/07-diagrams/topology/",
+      "/07-diagrams/flowchart.mmd": "/07-diagrams/flowchart/"
     };
 
     (function () {

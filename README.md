@@ -1,7 +1,7 @@
 # Proxmox Enterprise Solution
 
-A complete, reproducible build of a nine-VM enterprise estate on a single
-Hetzner EX44 dedicated server, documented end to end.
+A complete, reproducible build of a six-VM Proxmox estate on a single Hetzner
+EX44 dedicated server, written as a hands-on training project.
 
 **Documentation:** <https://dmaljkovic.github.io/proxmox-enterprise-solution/>
 
@@ -10,30 +10,25 @@ Hetzner EX44 dedicated server, documented end to end.
 | | |
 |---|---|
 | Host | Hetzner EX44 — Intel Core i5-13500, 64 GB DDR4, 2 × 512 GB NVMe mirrored |
-| Hypervisor | Proxmox VE 9.2, ZFS on the mirrored pair |
-| Guests | Nine VMs, Ubuntu 26.04 LTS (Rocket.Chat on 24.04 LTS) |
-| Published | Rocket.Chat, Nextcloud, Keycloak, Grafana and the docs, behind one Nginx proxy with TLS |
-| Identity | OpenLDAP directory with Keycloak 26.8.1 as the OIDC provider |
-| Observability | Prometheus and Grafana with node_exporter across the estate |
+| Hypervisor | Proxmox VE 8.2, ZFS on the mirrored pair |
+| Guests | Six VMs, Ubuntu Server 24.04 LTS |
+| Published | Rocket.Chat, Nextcloud, Keycloak, MkDocs and the proxy, behind one Nginx instance with TLS |
+| Identity | OpenLDAP directory with Keycloak as the OIDC provider |
+| Observability | Prometheus and Grafana on the Proxmox host |
 
 ## Documentation structure
 
 ```
 docs/
-├── index.md                       Entry point and design decisions
-├── 00-prerequisites/              Hardware, account, DNS, inventory
-├── 01-preparation/                Rescue, ZFS, install, network, recovery
+├── index.md                       Entry point and training timeline
+├── 01-preparation/                Rescue mode, Proxmox install, networking
 ├── 02-vm-creation/                One page per guest
 ├── 03-software/                   One page per service
-├── 04-security/                   Firewalls, Fail2Ban, CIS, backups, audit
+├── 04-security/                   Firewall, Fail2Ban, backups, CIS hardening
 ├── 05-monitoring/                 Prometheus, Grafana, Hetzner checks
-├── 06-maintenance/                Updates, restore, doc maintenance
-└── 07-diagrams/                   Topology, auth flow, backup flow
+├── 06-maintenance/                Updates, rollback, doc maintenance
+└── 07-diagrams/                   Topology and authentication flow
 ```
-
-The [lab inventory](docs/00-prerequisites/03-lab-inventory.md) is the single
-source of truth for every address, port and version. Other pages link to it
-rather than repeating values.
 
 ## Local development
 
@@ -61,6 +56,6 @@ site requires the repository's Pages source to be set to **GitHub Actions**.
 
 ## Sanitization
 
-This repository is public. The [sanitization rules](docs/00-prerequisites/04-sanitization-rules.md)
-define the placeholder convention and the values that must never appear.
+This repository is public. [SANITIZATION_RULES.md](SANITIZATION_RULES.md)
+defines the placeholder convention and the values that must never appear.
 `scripts/sanitize_check.py` enforces them in the pre-commit hook and in CI.

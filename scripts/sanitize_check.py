@@ -360,7 +360,7 @@ def main() -> int:
 
     if total:
         print(f"\n{total} sanitization violation(s) found.")
-        print("See docs/00-prerequisites/04-sanitization-rules.md for the allow-list and the manual review checklist.")
+        print("See SANITIZATION_RULES.md for the allow-list and the manual review checklist.")
         return 1
 
     scanned = len([p for p in set(targets) if p.is_file()])
