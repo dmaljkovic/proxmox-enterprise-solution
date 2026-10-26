@@ -1,4 +1,4 @@
-# Proxmox Lab Infrastructure Training
+# Proxmox Enterprise Solution
 
 Welcome to the comprehensive 15-day infrastructure training project. This documentation will guide you through building a complete enterprise infrastructure from bare metal to production-ready services.
 
