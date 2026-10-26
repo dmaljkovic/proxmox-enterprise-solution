@@ -3,11 +3,6 @@
 A complete, reproducible build of a nine-VM enterprise estate on a single
 Hetzner EX44 dedicated server, documented end to end.
 
-Everything in this documentation is built to be followed literally. Each page
-states the exact version, the exact command and the exact expected result. The
-placeholders — `example.com` and `10.0.0.0/24` — are defined once in the
-[lab inventory](00-prerequisites/03-lab-inventory.md) and reused everywhere.
-
 ## What this is
 
 | | |
