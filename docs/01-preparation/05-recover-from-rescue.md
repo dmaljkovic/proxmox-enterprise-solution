@@ -4,13 +4,6 @@ The procedure for a host whose network configuration was lost after a ZFS
 pool import, and the general repair path for a Proxmox installation that
 will not boot.
 
-!!! info "What this replaces"
-    The original notes for this procedure contained a real IP address, a
-    gateway from a previous server, and an interface name that was only
-    correct on that machine. It also changed a ZFS mountpoint property
-    permanently as a side effect. The procedure below is the corrected
-    version.
-
 ## The failure this addresses
 
 After a Proxmox installation under QEMU, the host reboots into the physical

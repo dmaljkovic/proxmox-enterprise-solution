@@ -22,8 +22,7 @@ The design assumes a single host with a mirrored disk pair. That buys three
 things that matter more here than raw capacity:
 
 - **ZFS mirroring.** A single disk failure takes the host down but does not
-  destroy the pool. This is the failure that a previous iteration of this
-  project actually suffered.
+  destroy the pool.
 - **Reproducibility.** The whole estate can be torn down and rebuilt from the
   documentation, because every VM is created from a template on a scripted
   basis.

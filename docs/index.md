@@ -38,31 +38,6 @@ Hetzner EX44 dedicated server, documented end to end.
 | Maintenance | Updates, backup and restore, maintaining this site |
 | Diagrams | Topology, authentication flow, backup flow |
 
-## Design decisions worth knowing
-
-- **One server, one failure domain.** There is no failover. Recovery is
-  restore-from-backup, and the [backup strategy](04-security/05-backup-strategy.md)
-  is written around that reality rather than around an imaginary HA setup.
-- **Only one machine is public.** Traffic arrives at the Nginx proxy and goes
-  nowhere else. Every other VM sits behind the private network and its own
-  firewall rules.
-- **One documented exception.** The Rocket.Chat guest runs Ubuntu 24.04 LTS
-  because MongoDB does not start on Ubuntu 26.04's kernel. The reasoning is in
-  the [lab inventory](00-prerequisites/03-lab-inventory.md).
-- **The monitoring stack is not on the host.** Prometheus and Grafana are
-  ordinary VMs, so a host compromise does not hand over the metrics, and
-  neither is exposed to the internet.
-- **The old deployment's addresses are gone.** Every address in these pages is
-  a placeholder. The [sanitization rules](00-prerequisites/04-sanitization-rules.md) explain the
-  convention and the automated gate that enforces it.
-
-## Build status
-
-This documentation is being rebuilt in phases. Pages still carrying the
-"Under construction" notice are placeholders for content that is being
-rewritten, not finished procedures. The build history of the previous version
-is preserved on the `archive/pre-rewrite` branch.
-
 ## Local development
 
 ```bash

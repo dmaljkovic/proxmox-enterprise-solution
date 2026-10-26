@@ -19,13 +19,12 @@ git config core.hooksPath .githooks
 
 ## Why this exists
 
-The previous deployment of this project ran on a real Hetzner server. Notes
-kept alongside the documentation contained that server's public address, its
-gateway, and the private subnet used by the VMs. Copy-pasting those values into
-a public repository would expose live infrastructure.
+Notes written while building a real server contain that server's public
+address, its gateway, and the private subnet used by the VMs. This repository is
+public, so committing those values would expose live infrastructure.
 
-The rewrite replaces every one of those values with documented placeholders, and
-this gate exists to stop them from creeping back in.
+Every value is therefore written as a documented placeholder, and this gate
+exists to stop a real value from creeping in.
 
 ## Placeholder convention
 
@@ -57,15 +56,15 @@ These rules have **no escape hatch**. A match is always a blocking error.
 
 | Rule | Blocks |
 |---|---|
-| `legacy-public-ip` | The retired server's public address |
-| `legacy-gateway` | The retired server's gateway address |
+| `legacy-public-ip` | A real server's public address |
+| `legacy-gateway` | A real server's gateway address |
 | `unrelated-domain` | Domains owned by other projects |
 | `unrelated-hardware` | Hardware identifiers belonging to other projects |
 
 !!! note "The blocked values are not written down here on purpose"
-    This document is published. Spelling out the retired addresses would defeat
-    the purpose of blocking them, and would publish a description of the
-    previous topology to anyone reading the repository.
+    This document is published. Spelling out the blocked addresses would defeat
+    the purpose of blocking them, and would describe the real topology to
+    anyone reading the repository.
 
     The values are therefore matched by **SHA-256 digest** rather than by
     literal comparison. The digests live in `scripts/sanitize_check.py`, in the
@@ -110,7 +109,7 @@ repository directory on purpose:
 | File | Why |
 |---|---|
 | `github_token.txt` | GitHub credential |
-| `RESCU_FIX.docx` | Contains the retired server's real address |
+| `RESCU_FIX.docx` | Working notes with a real server address |
 | `Edukacija_proxmox_zfs.pdf` | Generated artefact derived from the above |
 | `*.pem`, `*.key`, `id_rsa`, `id_ed25519` | Private key material |
 | `.env` | Runtime secrets |
