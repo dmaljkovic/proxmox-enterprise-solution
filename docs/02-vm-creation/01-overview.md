@@ -40,17 +40,6 @@ Based on your [network setup](../01-preparation/03-network-configuration.md):
 | openldap | 105 | vmbr2 | `___` | ldap.example.com | LDAP Port 389/636 |
 | keycloak | 106 | vmbr2 | `___` | auth.example.com | Keycloak Port 8080 |
 
-### Example (Filled)
-
-| VM Name | VM ID | Bridge | Internal IP | Public Domain | Services |
-|---------|-------|--------|-------------|---------------|----------|
-| rocketchat | 101 | vmbr2 | 10.0.0.101 | chat.example.com | Rocket.Chat Port 3000 |
-| nextcloud | 102 | vmbr2 | 10.0.0.102 | cloud.example.com | Nextcloud Port 80/443 |
-| nginx-proxy | 103 | vmbr2 | 10.0.0.20 | proxy.example.com | Nginx Port 80/443 |
-| mkdocs | 104 | vmbr2 | 10.0.0.104 | docs.example.com | MkDocs Port 8000 |
-| openldap | 105 | vmbr2 | 10.0.0.105 | ldap.example.com | LDAP Port 389/636 |
-| keycloak | 106 | vmbr2 | 10.0.0.106 | auth.example.com | Keycloak Port 8080 |
-
 ## Network Architecture
 
 ```mermaid
