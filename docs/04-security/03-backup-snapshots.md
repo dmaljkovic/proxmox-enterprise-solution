@@ -108,5 +108,3 @@ Add:
 - [ ] Test backup completed
 
 ## Next Steps
-
-- [CIS Hardening](04-cis-hardening.md)
