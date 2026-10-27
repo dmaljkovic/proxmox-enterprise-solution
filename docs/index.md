@@ -97,22 +97,6 @@ graph TB
 | Visualization | Grafana | 10.x |
 | Documentation | MkDocs | Latest |
 
-## Important Notes
-
-!!! warning "Production Use"
-    This documentation uses `example.com` as a placeholder domain. Replace with your actual domain in production environments.
-
-!!! caution "Data Safety"
-    Several operations in this training involve disk partitioning and data destruction. Always verify you're working on the correct system before executing commands.
-
-!!! tip "Documentation Format"
-    Each document follows this pattern:
-    1. Prerequisites checklist
-    2. Step-by-step instructions
-    3. Verification steps
-    4. Daily completion checklist
-
-
 ## Next Steps
 
 Ready to begin? Start with [Prerequisites](#prerequisites) to ensure you have everything needed, then proceed to [Day 1 - Rescue Mode](01-preparation/01-rescue-mode.md).
