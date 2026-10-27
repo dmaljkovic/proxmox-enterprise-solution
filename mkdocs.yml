@@ -71,9 +71,9 @@ plugins:
         04-security/01-host-firewall.md: 04-security/01-firewall.md
         04-security/02-vm-firewall.md: 04-security/01-firewall.md
         04-security/03-fail2ban.md: 04-security/02-fail2ban.md
-        04-security/04-cis-hardening.md: 04-security/04-cis-hardening.md
+        04-security/04-cis-hardening.md: 04-security/01-firewall.md
         04-security/05-backup-strategy.md: 04-security/03-backup-snapshots.md
-        04-security/06-security-audit.md: 04-security/04-cis-hardening.md
+        04-security/06-security-audit.md: 04-security/01-firewall.md
         06-maintenance/02-backup-restore.md: 04-security/03-backup-snapshots.md
         07-diagrams/01-topology.md: 07-diagrams/topology.md
         07-diagrams/02-login-flow.md: 07-diagrams/flowchart.md
@@ -115,7 +115,6 @@ nav:
       - 04-security/01-firewall.md
       - 04-security/02-fail2ban.md
       - 04-security/03-backup-snapshots.md
-      - 04-security/04-cis-hardening.md
   - Monitoring:
       - 05-monitoring/01-prometheus-grafana.md
       - 05-monitoring/02-hetzner-monitoring.md

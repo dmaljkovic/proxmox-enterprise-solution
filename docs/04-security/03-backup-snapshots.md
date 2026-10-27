@@ -106,5 +106,3 @@ Add:
 - [ ] Backup script created
 - [ ] Weekly backup scheduled
 - [ ] Test backup completed
-
-## Next Steps
