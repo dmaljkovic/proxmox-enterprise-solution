@@ -9,7 +9,7 @@ This training covers the complete lifecycle of modern infrastructure deployment:
 - **Virtualization & Storage**: Proxmox VE with ZFS storage pools
 - **Identity Management**: OpenLDAP directory services with Keycloak SSO
 - **Collaboration Tools**: Rocket.Chat and Nextcloud deployment
-- **Security**: CIS benchmark hardening, firewalls, and intrusion prevention
+- **Security**: Firewalls and intrusion prevention
 - **Monitoring**: Prometheus and Grafana observability stack
 - **Documentation**: MkDocs for knowledge management
 
