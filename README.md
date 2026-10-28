@@ -24,7 +24,7 @@ docs/
 ├── 01-preparation/                Rescue mode, Proxmox install, networking
 ├── 02-vm-creation/                One page per guest
 ├── 03-software/                   One page per service
-├── 04-security/                   Firewall, Fail2Ban, backups, CIS hardening
+├── 04-security/                   Firewall, Fail2Ban, and backups
 ├── 05-monitoring/                 Prometheus, Grafana, Hetzner checks
 ├── 06-maintenance/                Updates, rollback, doc maintenance
 └── 07-diagrams/                   Topology and authentication flow
