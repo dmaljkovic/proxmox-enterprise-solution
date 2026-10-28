@@ -25,13 +25,12 @@ This training covers the complete lifecycle of modern infrastructure deployment:
 | 6 | OpenLDAP server setup | 3-4 hours |
 | 7 | Keycloak installation and realm setup | 4-5 hours |
 | 8 | OIDC integration for SSO | 3-4 hours |
-| 9 | CIS hardening | 6-8 hours |
-| 10 | Firewall, Fail2Ban, and backups | 4-5 hours |
-| 11 | Prometheus and Grafana monitoring | 4-5 hours |
-| 12 | MkDocs documentation server | 3-4 hours |
-| 13 | Security audits | 4-5 hours |
-| 14 | Final testing and validation | 4-5 hours |
-| 15 | Advanced topics (optional) | Variable |
+| 9 | Firewall, Fail2Ban, and backups | 4-5 hours |
+| 10 | Prometheus and Grafana monitoring | 4-5 hours |
+| 11 | MkDocs documentation server | 3-4 hours |
+| 12 | Security audits | 4-5 hours |
+| 13 | Final testing and validation | 4-5 hours |
+| 14 | Advanced topics (optional) | Variable |
 
 ## Prerequisites
 
